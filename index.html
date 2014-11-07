@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>pterodactyl</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        font-family: Monospace;
+        background-color: #000;
+        color: #000;
+        margin: 0px;
+        overflow: hidden;
+      }
+      #info {
+        color: #000;
+        position: absolute;
+        top: 10px;
+        width: 100%;
+        text-align: center;
+        z-index: 100;
+        display:block;
+      }
+      #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+    </style>
+  </head>
+
+  <body>
+    <div id="viewport"></div>
+    <script src="js/load.js"></script>
+    <script src="js/barnes-hut.js"></script>
+    <script src="js/three.min.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/pterodactyl.js"></script>
+  </body>
+</html>
+
+<script type="x-shader/x-vertex" id="nodevertexshader">
+  attribute vec3 color;
+  attribute float size;
+  attribute float alpha;
+
+  varying vec4 vColor;
+
+  void main() {
+    vColor = vec4(color, alpha);
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+
+    gl_PointSize = size * (300.0 / length(mvPosition.xyz));
+    gl_Position = projectionMatrix * mvPosition;
+  }
+</script>
+
+<script type="x-shader/x-fragment" id="nodefragmentshader">
+  uniform sampler2D texture;
+  varying vec4 vColor;
+
+  void main() {
+    gl_FragColor = vColor;
+    gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+  }
+
+</script>
+
+<script type="x-shader/x-vertex" id="edgevertexshader">
+  attribute vec3 color;
+  attribute float alpha;
+
+  varying vec4 vColor;
+
+  void main() {
+    vColor = vec4(color, alpha);
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+  }
+</script>
+
+<script type="x-shader/x-fragment" id="edgefragmentshader">
+  varying vec4 vColor;
+
+  void main() {
+    gl_FragColor = vColor;
+  }
+
+</script>
