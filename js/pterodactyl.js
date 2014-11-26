@@ -1,5 +1,5 @@
-var renderer, camera;
 var scene, element;
+var renderer, camera;
 var ambient, point;
 var aspectRatio, windowHalf;
 var mouse, time;
@@ -9,7 +9,7 @@ var clock;
 
 var ground, groundGeometry, groundMaterial;
 var network, nodeGeometry, edgeGeometry, nodeParticles, nodeColors;
-var dampening = 0.99;
+var dampening, vortex;
 
 function initScene() {
   clock = new THREE.Clock();
@@ -17,7 +17,7 @@ function initScene() {
   windowHalf = new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2);
   aspectRatio = window.innerWidth / window.innerHeight;
   
-  scene = new THREE.Scene();  
+  scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(45, aspectRatio, 1, 10000);
   camera.position.z = 800;
@@ -39,7 +39,7 @@ function mod(n, d) {
   return n;
 }
 
-function initLights(){
+function initLights() {
   ambient = new THREE.AmbientLight(0x001111);
   scene.add(ambient);
 
@@ -71,25 +71,31 @@ function defineNodeColors() {
   for (var c = 0; c < paletteSize; c++) {
     var index = (c * 7) % paletteSize;
     var color = colors[index];
-    nodeColors[c.toString()] = [color.r, color.g, color.b];
+    nodeColors[c] = [color.r, color.g, color.b];
   }
 }
 
 function initNetwork(name) {
   defineNodeColors();
+  dampening = 0.995;
+  vortex = 0.0005;
   loadJSON('networks/' + name + '.json', function(nodes) {
     network = {nodes: {}, edges: [], identities: []};
     nodes.forEach(function(node, index) {
       node.index = index;
+      node.mass = node.betweenness + 1;
+      node.size = node.betweenness * 300 + 50;
       node.velocity = [0.0, 0.0, 0.0];
       node.acceleration = [0.0, 0.0, 0.0];
-      node.repulsion = 1.0;
+      // node.repulsion = 10.0 + node.mass * 10;
+      node.repulsion = 10.0;
+      // node.springLength = 300.0 - node.mass;
       node.springLength = 200.0;
       node.springConstant = 0.1;
-      node.color = nodeColors[node.modularity_scores] || nodeColors['0'];
+      node.color = nodeColors[node.community] || nodeColors[0];
       network.identities.push(node.identity);
       network.nodes[node.identity] = node;
-      node.friendship_identities.forEach(function(edge) {
+      node.outgoing.forEach(function(edge) {
         network.edges.push([node.identity, edge]);
       });
     });
@@ -129,12 +135,10 @@ function randomAlphas(alphas) {
   }
 }
 
-function randomSizes(sizes) {
-  var n = 50.0, n2 = 50.0;
-  for (var i = 0; i < sizes.length; i++) {
-    var x = Math.random() * n + n2;
-    sizes[i] = x;
-  }
+function betweennessSize(network, sizes) {
+  network.identities.forEach(function(identity, index) {
+    sizes[index] = network.nodes[identity].size;
+  });
 }
 
 function particleMaterial(type) {
@@ -172,7 +176,7 @@ function initParticles(network) {
   randomPositions(network.nodePositions);
   randomColors(network, network.nodeColors);
   randomAlphas(network.nodeAlphas);
-  randomSizes(network.nodeSizes);
+  betweennessSize(network, network.nodeSizes);
 
   nodeGeometry = new THREE.BufferGeometry();
   nodeGeometry.dynamic = true;
@@ -222,7 +226,7 @@ function init() {
 
   initScene();
   initLights();
-  initNetwork('mauve');
+  initNetwork('mauve-new');
 }
 
 function onResize() {
@@ -298,7 +302,7 @@ function applyForces(network, delta) {
 
   network.identities.forEach(function(fromkey) {
     var from = network.nodes[fromkey]
-    add(from.acceleration, [1.0 / pos[from.index*3], 1.0 / pos[from.index*3+1], 1.0 / pos[from.index*3+2]], 0.0001);
+    add(from.acceleration, [1.0 / pos[from.index*3], 1.0 / pos[from.index*3+1], 1.0 / pos[from.index*3+2]], vortex);
     add(from.acceleration, tree.repulsion(tree, [pos[from.index*3], pos[from.index*3+1], pos[from.index*3+2]]), from.repulsion);
     add(from.velocity, from.acceleration, delta);
     scale(from.velocity, dampening);
