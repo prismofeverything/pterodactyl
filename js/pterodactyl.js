@@ -77,8 +77,10 @@ function defineNodeColors() {
 
 function initNetwork(name) {
   defineNodeColors();
-  dampening = 0.995;
-  vortex = 0.0005;
+  dampening = 0.9;
+  vortex = 10;
+  // dampening = 0.995;
+  // vortex = 0.0005;
   loadJSON('networks/' + name + '.json', function(nodes) {
     network = {nodes: {}, edges: [], identities: []};
     nodes.forEach(function(node, index) {
@@ -87,11 +89,15 @@ function initNetwork(name) {
       node.size = node.betweenness * 300 + 50;
       node.velocity = [0.0, 0.0, 0.0];
       node.acceleration = [0.0, 0.0, 0.0];
-      // node.repulsion = 10.0 + node.mass * 10;
-      node.repulsion = 10.0;
-      // node.springLength = 300.0 - node.mass;
+      node.repulsion = 300.0;
       node.springLength = 200.0;
-      node.springConstant = 0.1;
+      node.springConstant = 2;
+      // // node.repulsion = 10.0 + node.mass * 10;
+      // // node.springLength = 300.0 - node.mass;
+      // // node.springConstant = 0.1;
+      // node.repulsion = 10.0;
+      // node.springLength = 200.0;
+      // node.springConstant = 0.1;
       node.color = nodeColors[node.community] || nodeColors[0];
       network.identities.push(node.identity);
       network.nodes[node.identity] = node;
@@ -279,6 +285,9 @@ function springForces(network, delta) {
     var relation = relate(pos[from.index*3], pos[from.index*3+1], pos[from.index*3+2], pos[to.index*3], pos[to.index*3+1], pos[to.index*3+2]);
     var distance = relation[0];
     var direction = relation[1];
+    // add(from.velocity, direction, (distance - from.springLength) * -0.5 * from.springConstant);
+    // add(to.velocity, direction, (distance - to.springLength) * 0.5 * to.springConstant);
+
     add(from.acceleration, direction, (distance - from.springLength) * -0.5 * from.springConstant);
     add(to.acceleration, direction, (distance - to.springLength) * 0.5 * to.springConstant);
   });
