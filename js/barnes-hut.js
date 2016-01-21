@@ -14,9 +14,9 @@ function barnesHut(pos, span, theta) {
   }
 
   function octant(center, node) {
-    var side = node[0] < center[0] ? 0 : 1;
-    var up = node[1] < center[1] ? 0 : 2;
-    var front = node[2] < center[2] ? 0 : 4;
+    var side = node[0] <= center[0] ? 0 : 1;
+    var up = node[1] <= center[1] ? 0 : 2;
+    var front = node[2] <= center[2] ? 0 : 4;
     return [side, up, front];
   }
 
@@ -29,7 +29,11 @@ function barnesHut(pos, span, theta) {
   }
 
   function isBranch(level) {
-    return level.span;
+    return level.mass;
+  }
+
+  function equalNodes(a, b) {
+    return (!isBranch(a) && !isBranch(b) && a[0] === b[0] && a[1] === b[1] && a[2] === b[2]);
   }
 
   function addMass(nexus, mass, point) {
@@ -46,13 +50,15 @@ function barnesHut(pos, span, theta) {
     if (branch) {
       if (isBranch(branch)) {
         addNode(branch, node);
+      } else if (equalNodes(branch, node)) {
+
       } else {
         var arrow = [
           oct[0] === 0 ? -1 : 1,
           oct[1] === 0 ? -1 : 1,
           oct[2] === 0 ? -1 : 1
         ];
-        var half = level.span * 0.5
+        var half = level.span * 0.5;
         var offcenter = findCenter(level.center, half, arrow);
         var lower = emptyLevel(offcenter, half);
 
@@ -78,6 +84,7 @@ function barnesHut(pos, span, theta) {
     var root = emptyLevel([0, 0, 0], span);
     for (var n = 0; n < pos.length; n += 3) {
       var node = [pos[n], pos[n+1], pos[n+2]]
+      var stack = [];
       if (inBounds(span, node)) {
         addNode(root, node);
       }
